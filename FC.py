@@ -49,19 +49,19 @@ def delete_item(dir_path, name):
         return str(e)
     return None
 
-def draw_panel(stdscr, path, items, index, active, startx, width):
+def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
     h, w = stdscr.getmaxyx()
-    title = f"{path}"
-    stdscr.addstr(0, startx + 1, title[:width - 2])
+    visible_rows = h - 3
 
-    for i, name in enumerate(items[:h - 3]):
+    stdscr.addstr(0, startx + 1, path[:width - 2])
+
+    # Slice the visible window
+    window = items[scroll : scroll + visible_rows]
+
+    for i, name in enumerate(window):
         y = i + 1
-        attr = curses.A_NORMAL
-        if active and i == index:
-            attr = curses.A_REVERSE
-        display = name
-        if is_dir(path, name):
-            display += "/"
+        attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
+        display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
         stdscr.addstr(y, startx + 1, display[:width - 2], attr)
 
 def status_line(stdscr, msg="F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
@@ -79,6 +79,8 @@ def main(stdscr):
     right_items = list_dir(right_path)
     left_idx = 0
     right_idx = 0
+    left_scroll = 0
+    right_scroll = 0
     active_panel = "left"
     message = ""
 
@@ -92,15 +94,18 @@ def main(stdscr):
             left_path,
             left_items,
             left_idx,
+            left_scroll,
             active_panel == "left",
             0,
             half
         )
+
         draw_panel(
             stdscr,
             right_path,
             right_items,
             right_idx,
+            right_scroll,
             active_panel == "right",
             half,
             w - half
@@ -121,17 +126,33 @@ def main(stdscr):
             active_panel = "right" if active_panel == "left" else "left"
 
         # Arrow navigation
-        elif key in (curses.KEY_UP, curses.KEY_DOWN):
+        elif key == curses.KEY_UP:
             if active_panel == "left":
-                if key == curses.KEY_UP and left_idx > 0:
+                if left_idx > 0:
                     left_idx -= 1
-                elif key == curses.KEY_DOWN and left_idx < len(left_items) - 1:
-                    left_idx += 1
+                    if left_idx < left_scroll:
+                        left_scroll -= 1
             else:
-                if key == curses.KEY_UP and right_idx > 0:
+                if right_idx > 0:
                     right_idx -= 1
-                elif key == curses.KEY_DOWN and right_idx < len(right_items) - 1:
+                    if right_idx < right_scroll:
+                        right_scroll -= 1
+
+        elif key == curses.KEY_DOWN:
+            if active_panel == "left":
+                if left_idx < len(left_items) - 1:
+                    left_idx += 1
+                    h, w = stdscr.getmaxyx()
+                    visible = h - 3
+                    if left_idx >= left_scroll + visible:
+                        left_scroll += 1
+            else:
+                if right_idx < len(right_items) - 1:
                     right_idx += 1
+                    h, w = stdscr.getmaxyx()
+                    visible = h - 3
+                    if right_idx >= right_scroll + visible:
+                        right_scroll += 1
 
         # Enter: open directory
         elif key in (curses.KEY_ENTER, 10, 13):
