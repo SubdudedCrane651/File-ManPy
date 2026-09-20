@@ -143,7 +143,7 @@ def main(stdscr):
             w - half
         )
 
-        status_line(stdscr, message or "F3 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F4 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
