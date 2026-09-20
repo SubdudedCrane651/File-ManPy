@@ -170,6 +170,7 @@ def main(stdscr):
                     left_path = os.path.join(left_path, name)
                     left_items = list_dir(left_path)
                     left_idx = 0
+                    left_scroll = 0     # ← REQUIRED
 
             elif active_panel == "right" and right_items:
                 name = right_items[right_idx]
@@ -184,6 +185,7 @@ def main(stdscr):
                     right_path = os.path.join(right_path, name)
                     right_items = list_dir(right_path)
                     right_idx = 0
+                    right_scroll = 0    # ← REQUIRED
 
         # F5: copy
         elif key == curses.KEY_F5:
