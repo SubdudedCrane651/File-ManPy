@@ -96,7 +96,7 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
         stdscr.addstr(y, startx + 1, display[:width - 2], attr)
 
-def status_line(stdscr, msg="F4 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit"):
+def status_line(stdscr, msg="F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
 
@@ -143,7 +143,7 @@ def main(stdscr):
             w - half
         )
 
-        status_line(stdscr, message or "F4 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
