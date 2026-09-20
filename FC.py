@@ -4,6 +4,26 @@ import curses
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def confirm_dialog(stdscr, message):
+    h, w = stdscr.getmaxyx()
+    win_h = 5
+    win_w = len(message) + 10
+    win_y = (h - win_h) // 2
+    win_x = (w - win_w) // 2
+
+    win = curses.newwin(win_h, win_w, win_y, win_x)
+    win.box()
+    win.addstr(1, 2, message)
+    win.addstr(3, 2, "[Y]es   [N]o")
+    win.refresh()
+
+    while True:
+        key = win.getch()
+        if key in (ord('y'), ord('Y')):
+            return True
+        if key in (ord('n'), ord('N')):
+            return False
+
 def list_dir(path):
     try:
         items = sorted(os.listdir(path))
@@ -119,7 +139,7 @@ def main(stdscr):
 
         if key == ord('q'):
             break
-
+        
         # Switch panel
         elif key == TAB:
 
@@ -153,7 +173,7 @@ def main(stdscr):
                     visible = h - 3
                     if right_idx >= right_scroll + visible:
                         right_scroll += 1
-
+                        
         # Enter: open directory
         elif key in (curses.KEY_ENTER, 10, 13):
             if active_panel == "left" and left_items:
@@ -191,52 +211,65 @@ def main(stdscr):
         elif key == curses.KEY_F5:
             if active_panel == "left" and left_items:
                 name = left_items[left_idx]
-                err = copy_item(left_path, name, right_path)
-                if err:
-                    message = f"Copy error: {err}"
+                if confirm_dialog(stdscr, f"Copy '{name}' to right panel?"):
+                    err = copy_item(left_path, name, right_path)
+                    if err:
+                        message = f"Copy error: {err}"
                 right_items = list_dir(right_path)
+                right_scroll = 0
+
             elif active_panel == "right" and right_items:
                 name = right_items[right_idx]
-                err = copy_item(right_path, name, left_path)
-                if err:
-                    message = f"Copy error: {err}"
+                if confirm_dialog(stdscr, f"Copy '{name}' to left panel?"):
+                    err = copy_item(right_path, name, left_path)
+                    if err:
+                        message = f"Copy error: {err}"
                 left_items = list_dir(left_path)
+                left_scroll = 0
 
         # F6: move
         elif key == curses.KEY_F6:
             if active_panel == "left" and left_items:
                 name = left_items[left_idx]
-                err = move_item(left_path, name, right_path)
-                if err:
-                    message = f"Move error: {err}"
+                if confirm_dialog(stdscr, f"Move '{name}' to right panel?"):
+                    err = move_item(left_path, name, right_path)
+                    if err:
+                        message = f"Move error: {err}"
                 left_items = list_dir(left_path)
                 right_items = list_dir(right_path)
-                left_idx = min(left_idx, max(0, len(left_items) - 1))
+                left_scroll = right_scroll = 0
+
             elif active_panel == "right" and right_items:
                 name = right_items[right_idx]
-                err = move_item(right_path, name, left_path)
-                if err:
-                    message = f"Move error: {err}"
+                if confirm_dialog(stdscr, f"Move '{name}' to left panel?"):
+                    err = move_item(right_path, name, left_path)
+                    if err:
+                        message = f"Move error: {err}"
                 right_items = list_dir(right_path)
                 left_items = list_dir(left_path)
-                right_idx = min(right_idx, max(0, len(right_items) - 1))
+                left_scroll = right_scroll = 0
 
         # F8: delete
         elif key == curses.KEY_F8:
             if active_panel == "left" and left_items:
                 name = left_items[left_idx]
-                err = delete_item(left_path, name)
-                if err:
-                    message = f"Delete error: {err}"
+                if confirm_dialog(stdscr, f"Delete '{name}'?"):
+                    err = delete_item(left_path, name)
+                    if err:
+                        message = f"Delete error: {err}"
                 left_items = list_dir(left_path)
                 left_idx = min(left_idx, max(0, len(left_items) - 1))
+                left_scroll = 0
+
             elif active_panel == "right" and right_items:
                 name = right_items[right_idx]
-                err = delete_item(right_path, name)
-                if err:
-                    message = f"Delete error: {err}"
+                if confirm_dialog(stdscr, f"Delete '{name}'?"):
+                    err = delete_item(right_path, name)
+                    if err:
+                        message = f"Delete error: {err}"
                 right_items = list_dir(right_path)
                 right_idx = min(right_idx, max(0, len(right_items) - 1))
+                right_scroll = 0
 
         # Mouse: simple click selection
         elif key == curses.KEY_MOUSE:
