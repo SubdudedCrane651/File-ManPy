@@ -23,7 +23,19 @@ def confirm_dialog(stdscr, message):
             return True
         if key in (ord('n'), ord('N')):
             return False
+        
+def edit_file(path, name):
+    full = os.path.join(path, name)
+    if os.path.isdir(full):
+        return "Cannot edit a directory."
 
+    # Windows
+    if os.name == "nt":
+        os.system(f'notepad "{full}"')
+    else:
+        # Linux / macOS
+        os.system(f'nano "{full}"')
+ 
 def list_dir(path):
     try:
         items = sorted(os.listdir(path))
@@ -84,7 +96,7 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
         stdscr.addstr(y, startx + 1, display[:width - 2], attr)
 
-def status_line(stdscr, msg="F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
+def status_line(stdscr, msg="F4 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
 
@@ -131,7 +143,7 @@ def main(stdscr):
             w - half
         )
 
-        status_line(stdscr, message or "F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F3 Edit F5 Copy  F6 Move  F8 Delete Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -206,6 +218,14 @@ def main(stdscr):
                     right_items = list_dir(right_path)
                     right_idx = 0
                     right_scroll = 0    # ← REQUIRED
+                    
+        elif key == curses.KEY_F4:
+            if active_panel == "left" and left_items:
+                name = left_items[left_idx]
+                message = edit_file(left_path, name)
+            elif active_panel == "right" and right_items:
+                name = right_items[right_idx]
+                message = edit_file(right_path, name)
 
         # F5: copy
         elif key == curses.KEY_F5:
