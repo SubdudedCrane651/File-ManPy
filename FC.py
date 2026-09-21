@@ -94,7 +94,17 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         y = i + 1
         attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
         display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
-        stdscr.addstr(y, startx + 1, display[:width - 2], attr)
+        # Determine color
+        full = os.path.join(path, name)
+        if os.path.isdir(full):
+            color = curses.color_pair(1)
+        elif os.access(full, os.X_OK):
+            color = curses.color_pair(2)
+        else:
+            color = curses.color_pair(3)
+
+        stdscr.addstr(y, startx + 1, display[:width - 2], attr | color)
+
 
 def status_line(stdscr, msg="F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
@@ -102,6 +112,18 @@ def status_line(stdscr, msg="F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  E
 
 def main(stdscr):
     curses.curs_set(0)
+    curses.start_color()
+    curses.use_default_colors()
+
+    # Directory = blue
+    curses.init_pair(1, curses.COLOR_BLUE, -1)
+
+    # Executable = green
+    curses.init_pair(2, curses.COLOR_GREEN, -1)
+
+    # Normal file = default
+    curses.init_pair(3, -1, -1)
+
     stdscr.keypad(True)
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
 
@@ -185,6 +207,46 @@ def main(stdscr):
                     visible = h - 3
                     if right_idx >= right_scroll + visible:
                         right_scroll += 1
+                        
+        elif key == curses.KEY_PPAGE:  # PgUp
+                h, w = stdscr.getmaxyx()
+                visible = h - 3
+                if active_panel == "left":
+                    left_idx = max(0, left_idx - visible)
+                    left_scroll = max(0, left_scroll - visible)
+                else:
+                    right_idx = max(0, right_idx - visible)
+                    right_scroll = max(0, right_scroll - visible)
+
+        elif key == curses.KEY_NPAGE:  # PgDn
+                h, w = stdscr.getmaxyx()
+                visible = h - 3
+                if active_panel == "left":
+                    left_idx = min(len(left_items) - 1, left_idx + visible)
+                    left_scroll = min(len(left_items) - visible, left_scroll + visible)
+                else:
+                    right_idx = min(len(right_items) - 1, right_idx + visible)
+                    right_scroll = min(len(right_items) - visible, right_scroll + visible)
+                    
+        elif key == curses.KEY_HOME:
+            if active_panel == "left":
+                left_idx = 0
+                left_scroll = 0
+            else:
+                right_idx = 0
+                right_scroll = 0
+
+        elif key == curses.KEY_END:
+            if active_panel == "left":
+                left_idx = len(left_items) - 1
+                h, w = stdscr.getmaxyx()
+                visible = h - 3
+                left_scroll = max(0, len(left_items) - visible)
+            else:
+                right_idx = len(right_items) - 1
+                h, w = stdscr.getmaxyx()
+                visible = h - 3
+                right_scroll = max(0, len(right_items) - visible)
                         
         # Enter: open directory
         elif key in (curses.KEY_ENTER, 10, 13):
