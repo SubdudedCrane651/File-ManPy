@@ -4,6 +4,18 @@ import curses
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def command_line(stdscr):
+    h, w = stdscr.getmaxyx()
+    stdscr.addstr(h - 2, 1, "Command: ")
+    stdscr.clrtoeol()
+    stdscr.refresh()
+
+    curses.echo()
+    cmd = stdscr.getstr(h - 2, 10, 200).decode("utf-8")
+    curses.noecho()
+
+    return cmd
+
 def confirm_dialog(stdscr, message):
     h, w = stdscr.getmaxyx()
     win_h = 5
@@ -106,7 +118,7 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         stdscr.addstr(y, startx + 1, display[:width - 2], attr | color)
 
 
-def status_line(stdscr, msg="F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
+def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
 
@@ -165,7 +177,7 @@ def main(stdscr):
             w - half
         )
 
-        status_line(stdscr, message or "F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -280,6 +292,11 @@ def main(stdscr):
                     right_items = list_dir(right_path)
                     right_idx = 0
                     right_scroll = 0    # ← REQUIRED
+                    
+        elif key == curses.KEY_F2:
+            cmd = command_line(stdscr)
+            os.system(cmd)
+            message = f"Ran: {cmd}"                    
                     
         elif key == curses.KEY_F4:
             if active_panel == "left" and left_items:
