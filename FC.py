@@ -4,6 +4,22 @@ import curses
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def draw_panel_frame(win):
+    win.border('|', '|', '=', '=', '+', '+', '+', '+')
+
+def init_colors():
+    curses.start_color()
+    curses.use_default_colors()
+
+    # Background color pair
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
+
+    # Selected item
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)
+
+    # Normal item
+    curses.init_pair(3, curses.COLOR_WHITE, -1)
+
 def command_line(stdscr):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 2, 1, "Command: ")
@@ -97,15 +113,27 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
     h, w = stdscr.getmaxyx()
     visible_rows = h - 3
 
-    stdscr.addstr(0, startx + 1, path[:width - 2])
+    # Fill panel background
+    for y in range(h - 1):
+        stdscr.addstr(y, startx, " " * width, curses.color_pair(1))
 
-    # Slice the visible window
+    # Draw panel frame
+    stdscr.vline(1, startx, curses.ACS_VLINE, h - 2)
+    stdscr.vline(1, startx + width - 1, curses.ACS_VLINE, h - 2)
+    stdscr.hline(0, startx, curses.ACS_HLINE, width)
+    stdscr.hline(h - 1, startx, curses.ACS_HLINE, width)
+
+    # Panel title (path)
+    stdscr.addstr(0, startx + 1, path[:width - 2], curses.color_pair(1))
+
+    # Slice visible window
     window = items[scroll : scroll + visible_rows]
 
     for i, name in enumerate(window):
         y = i + 1
         attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
         display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
+
         # Determine color
         full = os.path.join(path, name)
         if os.path.isdir(full):
@@ -115,8 +143,8 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         else:
             color = curses.color_pair(3)
 
+        # Draw item (NO separator lines)
         stdscr.addstr(y, startx + 1, display[:width - 2], attr | color)
-
 
 def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
@@ -138,6 +166,9 @@ def main(stdscr):
 
     stdscr.keypad(True)
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
+    
+    stdscr.bkgd(' ', curses.color_pair(1))
+    stdscr.clear()
 
     left_path = os.getcwd()
     right_path = os.getcwd()
