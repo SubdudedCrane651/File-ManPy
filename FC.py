@@ -6,6 +6,44 @@ import time
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def draw_title_bar(stdscr, path, items, index):
+    if not items:
+        return
+
+    name = items[index]
+    full = os.path.join(path, name)
+
+    # Get stats
+    try:
+        stat = os.stat(full)
+        size = stat.st_size
+        mtime = stat.st_mtime
+    except:
+        size = 0
+        mtime = 0
+
+    # Format size
+    if size < 1024:
+        size_str = f"{size} B"
+    elif size < 1024 * 1024:
+        size_str = f"{size // 1024} KB"
+    else:
+        size_str = f"{size // (1024 * 1024)} MB"
+
+    # Format date
+    date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+
+    # Build line
+    line = f"{name}   {size_str}   {date_str}"
+
+    h, w = stdscr.getmaxyx()
+
+    # Draw title bar one line above the command bar
+    stdscr.attron(curses.color_pair(1))
+    stdscr.addstr(h - 2, 1, line[:w - 2])
+    stdscr.attroff(curses.color_pair(1))
+
+
 def draw_panel_frame(win):
     win.border('|', '|', '=', '=', '+', '+', '+', '+')
 
@@ -235,6 +273,13 @@ def main(stdscr):
         )
         
         init_colors()
+        
+        draw_title_bar(
+            stdscr,
+            left_path if active_panel == "left" else right_path,
+            left_items if active_panel == "left" else right_items,
+            left_idx if active_panel == "left" else right_idx
+        )
 
         status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
