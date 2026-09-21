@@ -207,6 +207,8 @@ def main(stdscr):
             half,
             w - half
         )
+        
+        init_colors()
 
         status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
