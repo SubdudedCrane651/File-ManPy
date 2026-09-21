@@ -1,6 +1,8 @@
 import os
 import shutil
 import curses
+import time
+
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
@@ -134,8 +136,9 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
         display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
 
-        # Determine color
         full = os.path.join(path, name)
+
+        # Determine color (your existing logic)
         if os.path.isdir(full):
             color = curses.color_pair(1)
         elif os.access(full, os.X_OK):
@@ -143,8 +146,31 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         else:
             color = curses.color_pair(3)
 
-        # Draw item (NO separator lines)
-        stdscr.addstr(y, startx + 1, display[:width - 2], attr | color)
+        # --- NEW: size + date ---
+        try:
+            stat = os.stat(full)
+            size = stat.st_size
+            mtime = stat.st_mtime
+        except:
+            size = 0
+            mtime = 0
+
+        # Format size
+        if size < 1024:
+            size_str = f"{size} B"
+        elif size < 1024 * 1024:
+            size_str = f"{size // 1024} KB"
+        else:
+            size_str = f"{size // (1024 * 1024)} MB"
+
+        # Format date
+        date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+
+        # Build final line
+        line = f"{display:<30} {size_str:>10}  {date_str}"
+
+        stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
+
 
 def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
