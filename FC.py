@@ -2,9 +2,39 @@ import os
 import shutil
 import curses
 import time
+import subprocess
+import os
+import sys
 
 
 TAB = getattr(curses, "KEY_TAB", 9)
+
+def run_file(path, name):
+    full = os.path.join(path, name)
+
+    # Executable
+    if name.lower().endswith(".exe"):
+        subprocess.Popen([full], shell=True)
+
+    # Batch file
+    elif name.lower().endswith(".bat") or name.lower().endswith(".cmd"):
+        subprocess.Popen(["cmd.exe", "/c", full], shell=True)
+
+    # PowerShell script
+    elif name.lower().endswith(".ps1"):
+        subprocess.Popen([
+            "powershell.exe",
+            "-ExecutionPolicy", "Bypass",
+            "-File", full
+        ], shell=True)
+
+    # Python script (optional)
+    elif name.lower().endswith(".py"):
+        subprocess.Popen([sys.executable, full], shell=True)
+
+    # Everything else: open with default Windows app
+    else:
+        os.startfile(full)
 
 def draw_title_bar(stdscr, path, items, index):
     if not items:
@@ -381,6 +411,9 @@ def main(stdscr):
                     left_items = list_dir(left_path)
                     left_idx = 0
                     left_scroll = 0     # ← REQUIRED
+                    
+                else:
+                    run_file(left_path, name)
 
             elif active_panel == "right" and right_items:
                 name = right_items[right_idx]
@@ -396,6 +429,9 @@ def main(stdscr):
                     right_items = list_dir(right_path)
                     right_idx = 0
                     right_scroll = 0    # ← REQUIRED
+                
+                else:
+                    run_file(right_path, name)
                     
         elif key == curses.KEY_F2:
             cmd = command_line(stdscr)
