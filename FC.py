@@ -9,6 +9,35 @@ import sys
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def input_box(stdscr, prompt):
+    curses.echo()
+    h, w = stdscr.getmaxyx()
+
+    stdscr.attron(curses.color_pair(1))
+    stdscr.addstr(h - 3, 1, prompt.ljust(w - 2))
+    stdscr.attroff(curses.color_pair(1))
+
+    stdscr.move(h - 2, 1)
+    stdscr.clrtoeol()
+
+    stdscr.attron(curses.color_pair(1))
+    stdscr.addstr(h - 2, 1, "> ")
+    stdscr.attroff(curses.color_pair(1))
+
+    stdscr.refresh()
+
+    path = stdscr.getstr(h - 2, 3, w - 4).decode("utf-8")
+    curses.noecho()
+    return path.strip()
+
+def safe_date(mtime):
+    try:
+        if mtime > 0:
+            return time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+    except:
+        pass
+    return "---------- --:--"
+
 def run_file(path, name):
     full = os.path.join(path, name)
 
@@ -61,7 +90,9 @@ def draw_title_bar(stdscr, path, items, index):
         size_str = f"{size // (1024 * 1024)} MB"
 
     # Format date
-    date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+    #date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+    date_str = safe_date(mtime)
+
 
     # Build line
     line = f"{name}   {size_str}   {date_str}"
@@ -232,7 +263,8 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
             size_str = f"{size // (1024 * 1024)} MB"
 
         # Format date
-        date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+        #date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+        date_str = safe_date(mtime)
 
         # Build final line
         line = f"{display:<30} {size_str:>10}  {date_str}"
@@ -240,7 +272,7 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
 
 
-def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit"):
+def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
 
@@ -311,7 +343,7 @@ def main(stdscr):
             left_idx if active_panel == "left" else right_idx
         )
 
-        status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F8 Delete  Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -487,6 +519,24 @@ def main(stdscr):
                 right_items = list_dir(right_path)
                 left_items = list_dir(left_path)
                 left_scroll = right_scroll = 0
+                
+        elif key == curses.KEY_F7:
+            new_path = input_box(stdscr, "Enter directory path:")
+
+            if os.path.isdir(new_path):
+                if active_panel == "left":
+                    left_path = new_path
+                    left_items = list_dir(left_path)
+                    left_idx = 0
+                    left_scroll = 0
+                else:
+                    right_path = new_path
+                    right_items = list_dir(right_path)
+                    right_idx = 0
+                    right_scroll = 0
+            else:
+                message = f"Invalid directory: {new_path}"
+                      
 
         # F8: delete
         elif key == curses.KEY_F8:
