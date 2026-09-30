@@ -71,7 +71,6 @@ def sort_items(path, items, mode):
 
     return [".."] + real_items
 
-
 def input_box(stdscr, prompt):
     curses.echo()
     h, w = stdscr.getmaxyx()
@@ -273,6 +272,41 @@ def delete_item(dir_path, name):
         return str(e)
     return None
 
+def file_icon(full):
+    name = os.path.basename(full).lower()
+
+    # Parent directory
+    if name == "..":
+        return "■"
+
+    # Directory
+    if os.path.isdir(full):
+        return "■"
+
+    # Executable
+    if name.endswith(".exe"):
+        return "⚙️"
+
+    # Python file
+    if name.endswith(".py"):
+        return "π"
+
+    # Text file
+    if name.endswith(".txt"):
+        return "✎"
+
+    # Archives
+    if name.endswith((".zip", ".rar", ".7z")):
+        return "⛁"
+
+    # Images
+    if name.endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):
+        return "▣"
+
+    # Default file
+    return "□"
+
+
 def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
     h, w = stdscr.getmaxyx()
     visible_rows = h - 3
@@ -296,11 +330,13 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
     for i, name in enumerate(window):
         y = i + 1
         attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
-        display = name + ("/" if os.path.isdir(os.path.join(path, name)) else "")
 
         full = os.path.join(path, name)
 
-        # Determine color (your existing logic)
+        # ICON
+        icon = file_icon(full)
+
+        # Determine color
         if os.path.isdir(full):
             color = curses.color_pair(1)
         elif os.access(full, os.X_OK):
@@ -310,9 +346,9 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
 
         # --- NEW: size + date ---
         try:
-            stat = os.stat(full)
-            size = stat.st_size
-            mtime = stat.st_mtime
+            st = os.stat(full)
+            size = st.st_size
+            mtime = st.st_mtime
         except:
             size = 0
             mtime = 0
@@ -326,11 +362,11 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
             size_str = f"{size // (1024 * 1024)} MB"
 
         # Format date
-        #date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
         date_str = safe_date(mtime)
 
-        # Build final line
-        line = f"{display:<30} {size_str:>10}  {date_str}"
+        # Build final line WITH ICON
+        # icon = 4 chars, so name gets 26 instead of 30
+        line = f"{icon} {name:<28} {size_str:>10}  {date_str}"
 
         stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
 
