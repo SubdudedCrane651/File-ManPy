@@ -9,6 +9,69 @@ import sys
 
 TAB = getattr(curses, "KEY_TAB", 9)
 
+def sort_popup(stdscr):
+    options = [
+        "Name (A → Z)",
+        "Name (Z → A)",
+        "Size (small → large)",
+        "Size (large → small)",
+        "Date (old → new)",
+        "Date (new → old)"
+    ]
+
+    h, w = stdscr.getmaxyx()
+    win_h = len(options) + 4
+    win_w = 30
+    win_y = (h - win_h) // 2
+    win_x = (w - win_w) // 2
+
+    win = curses.newwin(win_h, win_w, win_y, win_x)
+    win.keypad(True)          # ⭐ REQUIRED ⭐
+    win.box()
+    win.addstr(1, 2, "Sort by:")
+
+    idx = 0
+
+    while True:
+        for i, opt in enumerate(options):
+            attr = curses.A_REVERSE if i == idx else curses.A_NORMAL
+            win.addstr(3 + i, 2, opt.ljust(win_w - 4), attr)
+
+        win.refresh()
+        key = win.getch()
+
+        if key == curses.KEY_UP:
+            idx = (idx - 1) % len(options)
+        elif key == curses.KEY_DOWN:
+            idx = (idx + 1) % len(options)
+        elif key in (10, 13):  # Enter
+            return idx
+        elif key == 27:        # ESC
+            return None
+s
+def sort_items(path, items, mode):
+    # Remove ".." temporarily
+    real_items = items[1:]
+
+    def full(item):
+        return os.path.join(path, item)
+
+    if mode == 0:  # Name A→Z
+        real_items.sort()
+    elif mode == 1:  # Name Z→A
+        real_items.sort(reverse=True)
+    elif mode == 2:  # Size small→large
+        real_items.sort(key=lambda x: os.path.getsize(full(x)))
+    elif mode == 3:  # Size large→small
+        real_items.sort(key=lambda x: os.path.getsize(full(x)), reverse=True)
+    elif mode == 4:  # Date old→new
+        real_items.sort(key=lambda x: os.path.getmtime(full(x)))
+    elif mode == 5:  # Date new→old
+        real_items.sort(key=lambda x: os.path.getmtime(full(x)), reverse=True)
+
+    return [".."] + real_items
+
+
 def input_box(stdscr, prompt):
     curses.echo()
     h, w = stdscr.getmaxyx()
@@ -272,7 +335,7 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
 
 
-def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  Tab Switch  Enter Open  q Quit"):
+def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  S Sort  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
 
@@ -343,7 +406,7 @@ def main(stdscr):
             left_idx if active_panel == "left" else right_idx
         )
 
-        status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  Tab Switch  Enter Open  q Quit")
+        status_line(stdscr, message or "F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  s Sort  Tab Switch  Enter Open  q Quit")
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -536,6 +599,20 @@ def main(stdscr):
                     right_scroll = 0
             else:
                 message = f"Invalid directory: {new_path}"
+                
+        elif key == ord('s'):
+            mode = sort_popup(stdscr)
+            if mode is not None:
+                if active_panel == "left":
+                    left_items = sort_items(left_path, left_items, mode)
+                    left_idx = 0
+                    left_scroll = 0
+                else:
+                    right_items = sort_items(right_path, right_items, mode)
+                    right_idx = 0
+                    right_scroll = 0
+                message = f"Sorted using mode {mode}"
+                
                       
 
         # F8: delete
