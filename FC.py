@@ -48,7 +48,7 @@ def sort_popup(stdscr):
             return idx
         elif key == 27:        # ESC
             return None
-s
+
 def sort_items(path, items, mode):
     # Remove ".." temporarily
     real_items = items[1:]
