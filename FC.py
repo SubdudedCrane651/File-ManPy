@@ -174,14 +174,17 @@ def init_colors():
     curses.start_color()
     curses.use_default_colors()
 
+    # Define dark green (color index 10)
+    curses.init_color(10, 0, 300, 0)   # RGB values 0–1000
+
     # Background color pair
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
 
-    # Selected item
-    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    # Selected item (dark green)
+    curses.init_pair(2, 10, curses.COLOR_BLUE)
 
     # Normal item
-    curses.init_pair(3, curses.COLOR_WHITE, -1)
+    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
 
 def command_line(stdscr):
     h, w = stdscr.getmaxyx()
@@ -306,35 +309,31 @@ def file_icon(full):
     # Default file
     return "[F]"
 
-
-
 def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
     h, w = stdscr.getmaxyx()
     visible_rows = h - 3
 
-    # Fill panel background
+    # Draw full blue background for the panel
     for y in range(h - 1):
         stdscr.addstr(y, startx, " " * width, curses.color_pair(1))
 
-    # Draw panel frame
+    # Draw frame
     stdscr.vline(1, startx, curses.ACS_VLINE, h - 2)
     stdscr.vline(1, startx + width - 1, curses.ACS_VLINE, h - 2)
     stdscr.hline(0, startx, curses.ACS_HLINE, width)
     stdscr.hline(h - 1, startx, curses.ACS_HLINE, width)
 
-    # Panel title (path)
+    # Panel title
     stdscr.addstr(0, startx + 1, path[:width - 2], curses.color_pair(1))
 
-    # Slice visible window
+    # Slice visible items
     window = items[scroll : scroll + visible_rows]
 
     for i, name in enumerate(window):
         y = i + 1
-        attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
-
         full = os.path.join(path, name)
 
-        # ICON
+        # ASCII icon
         icon = file_icon(full)
 
         # Determine color
@@ -345,7 +344,10 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         else:
             color = curses.color_pair(3)
 
-        # --- NEW: size + date ---
+        # Highlight active row
+        attr = curses.A_REVERSE if active and (scroll + i) == index else curses.A_NORMAL
+
+        # File stats
         try:
             st = os.stat(full)
             size = st.st_size
@@ -365,12 +367,14 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
         # Format date
         date_str = safe_date(mtime)
 
-        # Build final line WITH ICON
-        # icon = 4 chars, so name gets 26 instead of 30
+        # Build line
         line = f"{icon} {name:<28} {size_str:>10}  {date_str}"
 
-        stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
+        # Paint row background explicitly (this is the key)
+        stdscr.addstr(y, startx + 1, " " * (width - 2), color)
 
+        # Draw text on top
+        stdscr.addstr(y, startx + 1, line[:width - 2], attr | color)
 
 def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  S Sort  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
