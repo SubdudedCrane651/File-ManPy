@@ -277,34 +277,35 @@ def file_icon(full):
 
     # Parent directory
     if name == "..":
-        return "■"
+        return "[D]"
 
     # Directory
     if os.path.isdir(full):
-        return "■"
+        return "[D]"
 
     # Executable
     if name.endswith(".exe"):
-        return "⚙️"
+        return "[X]"
 
     # Python file
     if name.endswith(".py"):
-        return "π"
+        return "[P]"
 
     # Text file
     if name.endswith(".txt"):
-        return "✎"
+        return "[T]"
 
     # Archives
     if name.endswith((".zip", ".rar", ".7z")):
-        return "⛁"
+        return "[Z]"
 
     # Images
     if name.endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp")):
-        return "▣"
+        return "[I]"
 
     # Default file
-    return "□"
+    return "[F]"
+
 
 
 def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
@@ -387,14 +388,17 @@ def main(stdscr):
 
     active_left = True   # <-- REQUIRED
 
-    # Directory = blue
-    curses.init_pair(1, curses.COLOR_BLUE, -1)
+    # Directory = blue text on blue background
+    curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLUE)
 
-    # Executable = green
-    curses.init_pair(2, curses.COLOR_GREEN, -1)
+    # Executable = green text on blue background
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLUE)
 
-    # Normal file = default
-    curses.init_pair(3, -1, -1)
+    # Normal file = white text on blue background
+    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
+
+    # # Normal file = default
+    # curses.init_pair(3, -1, -1)
 
     stdscr.keypad(True)
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
