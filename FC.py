@@ -374,11 +374,18 @@ def draw_panel(stdscr, path, items, index, scroll, active, startx, width):
 def status_line(stdscr, msg="F2 CMD  F4 Edit  F5 Copy  F6 Move  F7 Input dir  F8 Delete  S Sort  Tab Switch  Enter Open  q Quit"):
     h, w = stdscr.getmaxyx()
     stdscr.addstr(h - 1, 1, msg[:w - 2])
+    
 
 def main(stdscr):
     curses.curs_set(0)
     curses.start_color()
     curses.use_default_colors()
+
+    # PANEL OBJECTS MUST BE CREATED HERE
+    left_panel = Panel(os.getcwd())
+    right_panel = Panel(os.getcwd())
+
+    active_left = True   # <-- REQUIRED
 
     # Directory = blue
     curses.init_pair(1, curses.COLOR_BLUE, -1)
@@ -565,10 +572,20 @@ def main(stdscr):
                     run_file(right_path, name)
                     
         elif key == curses.KEY_F2:
-            cmd = command_line(stdscr)
-            os.system(cmd)
-            message = f"Ran: {cmd}"                    
-                    
+            path = left_path if active_panel == "left" else right_path
+
+            curses.endwin()
+
+            if os.name == "nt":
+                cmd = f'start "" cmd.exe /K "cd /d {path}"'
+                subprocess.call(cmd, shell=True)
+            else:
+                subprocess.call(['x-terminal-emulator', '-e', f'cd "{path}" && bash'], shell=True)
+
+            stdscr.clear()
+            stdscr.refresh()
+
+
         elif key == curses.KEY_F4:
             if active_panel == "left" and left_items:
                 name = left_items[left_idx]
@@ -688,6 +705,13 @@ def main(stdscr):
                             right_idx = my - 1
             except curses.error:
                 pass
-
+            
+class Panel:
+    def __init__(self, path):
+        self.path = path
+        self.items = []
+        self.index = 0
+        self.scroll = 0
+            
 if __name__ == "__main__":
     curses.wrapper(main)
