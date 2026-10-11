@@ -174,8 +174,11 @@ def init_colors():
     curses.start_color()
     curses.use_default_colors()
 
-    # Define dark green (color index 10)
-    curses.init_color(10, 0, 300, 0)   # RGB values 0–1000
+    # Dark green (your custom color)
+    curses.init_color(10, 0, 300, 0)
+
+    # Light blue (custom)
+    curses.init_color(11, 400, 400, 1000)
 
     # Background color pair
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
@@ -183,8 +186,8 @@ def init_colors():
     # Selected item (dark green)
     curses.init_pair(2, 10, curses.COLOR_BLUE)
 
-    # Normal item
-    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
+    # Normal file (light blue)
+    curses.init_pair(3, 11, curses.COLOR_BLUE)
 
 def command_line(stdscr):
     h, w = stdscr.getmaxyx()
@@ -392,14 +395,14 @@ def main(stdscr):
 
     active_left = True   # <-- REQUIRED
 
-    # Directory = blue text on blue background
-    curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLUE)
+    # # Directory = blue text on blue background
+    # curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLUE)
 
-    # Executable = green text on blue background
-    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLUE)
+    # # Executable = green text on blue background
+    # curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLUE)
 
-    # Normal file = white text on blue background
-    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
+    # # Normal file = white text on blue background
+    # curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
 
     # # Normal file = default
     # curses.init_pair(3, -1, -1)
